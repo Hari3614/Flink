@@ -25,10 +25,11 @@ android {
 
     defaultConfig {
         applicationId = "com.example.flink"
-        minSdk = 21 // Minimum SDK version
+        minSdk = 23 // Updated to at least 23
         targetSdk = 34 // Target SDK version
         versionCode = 1
         versionName = "1.0"
+        multiDexEnabled true
     }
 
     buildTypes {
