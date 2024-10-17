@@ -1,13 +1,22 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flink/firebase_options.dart'; // Ensure this file is correctly generated and exists
+import 'package:flink/constants/constant_colors.dart';
+import 'package:flink/firebase_options.dart';
+import 'package:flink/services/authentication.dart';
+import 'package:flink/services/firebase_oparations.dart';
+import 'package:flink/views/homescreen/home_helpers.dart';
+import 'package:flink/views/landingscreen/landing_helpers.dart';
+import 'package:flink/views/landingscreen/landing_services.dart';
+import 'package:flink/views/landingscreen/landing_utils.dart';
+import 'package:flink/views/landingscreen/login_screen.dart';
+import 'package:flink/views/landingscreen/signup.dart';
+import 'package:flink/views/splashscreen/splash_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
-  WidgetsFlutterBinding
-      .ensureInitialized(); // Ensure the binding is initialized before Firebase
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions
-        .currentPlatform, // Firebase options based on platform
+    options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(const MyApp());
 }
@@ -17,60 +26,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+    ConstantColors constantColors = ConstantColors();
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => Authentication()),
+        ChangeNotifierProvider(create: (_) => LandingHelpers()),
+        ChangeNotifierProvider(create: (_) => LandingServices()),
+        ChangeNotifierProvider(create: (_) => FirebaseOparations()),
+        ChangeNotifierProvider(create: (_) => LandingUtils()),
+        ChangeNotifierProvider(create: (_) => LoginProvider()),
+        ChangeNotifierProvider(create: (_) => SignUpProvider()),
+        ChangeNotifierProvider(create: (_) => HomescreenHelpers()),
+      ],
+      child: MaterialApp(
+        home: SplashScreen(),
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.light(
+            primary: constantColors.blueColor,
+          ),
+          canvasColor: Colors.transparent,
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
