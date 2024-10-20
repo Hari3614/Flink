@@ -60,6 +60,7 @@ class SignUpPage extends StatelessWidget {
                   ),
                   SizedBox(height: 20),
 
+                  // Username Input
                   TextFormField(
                     style: TextStyle(color: Colors.white),
                     decoration: InputDecoration(
@@ -80,6 +81,8 @@ class SignUpPage extends StatelessWidget {
                     onChanged: (value) => signUpProvider.setUsername(value),
                   ),
                   SizedBox(height: 20),
+
+                  // Email Input
                   TextFormField(
                     style: TextStyle(color: Colors.white),
                     decoration: InputDecoration(
@@ -103,6 +106,8 @@ class SignUpPage extends StatelessWidget {
                     onChanged: (value) => signUpProvider.setEmail(value),
                   ),
                   SizedBox(height: 20),
+
+                  // Password Input
                   TextFormField(
                     style: TextStyle(color: Colors.white),
                     decoration: InputDecoration(
@@ -140,6 +145,8 @@ class SignUpPage extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 20),
+
+                  // Login Redirect
                   Center(
                     child: GestureDetector(
                       onTap: () {
@@ -169,10 +176,10 @@ class SignUpPage extends StatelessWidget {
     );
   }
 
+  // Submit form and initiate sign up
   void _submitForm(BuildContext context) {
     final signUpProvider = Provider.of<SignUpProvider>(context, listen: false);
     if (_formKey.currentState!.validate()) {
-      // Call signUp method to handle Firebase operations
       signUpProvider.signUp(context);
     }
   }
@@ -185,13 +192,13 @@ class SignUpProvider with ChangeNotifier {
   String _password = '';
   XFile? _profileImage;
 
-  // Getters for accessing form fields and profile image
+  // Getters
   String get username => _username;
   String get email => _email;
   String get password => _password;
   XFile? get profileImage => _profileImage;
 
-  // Setters for updating the state
+  // Setters
   void setUsername(String username) {
     _username = username;
     notifyListeners();
@@ -212,20 +219,18 @@ class SignUpProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Pick profile image
   Future<void> pickProfileImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     setProfileImage(pickedFile);
   }
 
-  // Sign up and store user information
-  // Sign up and store user information
+  // Sign up logic with Firebase Authentication and Firestore
   Future<void> signUp(BuildContext context) async {
     try {
-      // Create user with Firebase Authentication
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: _email, password: _password);
-
       User? user = userCredential.user;
       if (user != null) {
         String uid = user.uid;
@@ -233,12 +238,11 @@ class SignUpProvider with ChangeNotifier {
 
         // Upload profile image if available
         if (_profileImage != null) {
-          // Convert XFile to File
           File imageFile = File(_profileImage!.path);
-          profileImageUrl = await uploadProfileImage(imageFile, context, uid);
+          profileImageUrl = await uploadProfileImage(imageFile, uid, context);
         }
 
-        // Store user information in Firestore
+        // Store user data in Firestore
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'username': _username,
           'email': _email,
@@ -246,65 +250,64 @@ class SignUpProvider with ChangeNotifier {
           'createdAt': Timestamp.now(),
         });
 
-        // Show success message
+        // Navigate to home screen
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Sign up successful!'),
         ));
-
-        // Navigate to home screen using pushReplacement
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => HomeScreen()),
-          (Route<dynamic> route) => false, // Remove all previous routes
+          (Route<dynamic> route) => false,
         );
       }
     } on FirebaseAuthException catch (e) {
-      // Handle Firebase errors
-      print('FirebaseAuthException: ${e.code}'); // Debugging statement
-      if (e.code == 'email-already-in-use') {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              'Email is already registered. Please use a different email.'),
-        ));
-      } else if (e.code == 'weak-password') {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Password is too weak.'),
-        ));
-      } else if (e.code == 'invalid-email') {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Invalid email format.'),
-        ));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to sign up: ${e.message}'),
-        ));
-      }
+      handleFirebaseAuthErrors(context, e);
     } catch (e) {
-      print('Error: $e'); // Debugging statement
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to sign up. Try again later.'),
-      ));
+      showGeneralError(context, e);
     }
   }
 
-// Upload profile image
-  Future uploadProfileImage(
-      File imageFile, BuildContext context, String uid) async {
+  // Handle Firebase Authentication errors
+  void handleFirebaseAuthErrors(BuildContext context, FirebaseAuthException e) {
+    if (e.code == 'email-already-in-use') {
+      showError(context, 'Email is already registered.');
+    } else if (e.code == 'weak-password') {
+      showError(context, 'Password is too weak.');
+    } else if (e.code == 'invalid-email') {
+      showError(context, 'Invalid email format.');
+    } else {
+      showError(context, 'Failed to sign up: ${e.message}');
+    }
+  }
+
+  // Show error message
+  void showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
+  }
+
+  // Show general error
+  void showGeneralError(BuildContext context, dynamic error) {
+    print('Error: $error');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Failed to sign up. Try again later.'),
+    ));
+  }
+
+  // Upload profile image to Firebase Storage
+  Future<String> uploadProfileImage(
+      File imageFile, String uid, BuildContext context) async {
     try {
-      Reference storageRef = FirebaseStorage.instance.ref().child(
-          'userProfilePics/$uid/${DateTime.now()}.jpg'); // Use uid for unique storage path
+      Reference storageRef = FirebaseStorage.instance.ref(
+          'userProfileImages/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg');
       UploadTask uploadTask = storageRef.putFile(imageFile);
-      await uploadTask.whenComplete(() => null);
+      await uploadTask;
       String imageUrl = await storageRef.getDownloadURL();
-
-      // Save the image URL to Firestore under the user's document
-      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-        'profileImageUrl': imageUrl,
-      });
-
-      print('Profile image uploaded successfully: $imageUrl');
+      return imageUrl;
     } catch (e) {
-      print('Error uploading profile image: $e');
+      showError(context, 'Failed to upload profile image.');
+      return '';
     }
   }
 }

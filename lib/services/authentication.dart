@@ -8,6 +8,9 @@ class Authentication with ChangeNotifier {
 
   late String _userUid;
   String get getUserUid => _userUid;
+  bool _isLoggedIn = true;
+
+  bool get isLoggedIn => _isLoggedIn;
 
   //<<<<<<<< create Account >>>>>>>>
 
@@ -29,8 +32,21 @@ class Authentication with ChangeNotifier {
     }
   }
 
-  Future logOutViaEmail() {
-    return firebaseAuth.signOut();
+  void login() {
+    _isLoggedIn = true;
+    notifyListeners();
+  }
+
+  void logout() {
+    _isLoggedIn = false;
+    notifyListeners();
+  }
+
+  void checkLoginStatus() {
+    // Logic to check persistent login state (e.g., shared preferences, token, etc.)
+    // Here we're just simulating it with a boolean value for simplicity.
+    _isLoggedIn = false; // Assume user is not logged in for now
+    notifyListeners();
   }
 
 //<<<<<<<< Google SignIn >>>>>>>>
@@ -68,6 +84,19 @@ class Authentication with ChangeNotifier {
     } catch (e) {
       print('Error signing in with Google: $e');
       return false; // Return false on error
+    }
+  }
+
+  Authentication() {
+    // Check if the user is already signed in upon initialization
+    _initializeUser();
+  }
+
+  Future<void> _initializeUser() async {
+    User? user = firebaseAuth.currentUser;
+    if (user != null) {
+      _userUid = user.uid; // Initialize _userUid if user is signed in
+      notifyListeners();
     }
   }
 }

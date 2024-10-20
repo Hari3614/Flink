@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:eva_icons_flutter/eva_icons_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flink/services/authentication.dart';
 import 'package:flink/views/landingscreen/landing_utils.dart';
@@ -12,12 +12,13 @@ class FirebaseOparations with ChangeNotifier {
   // Initialize with default values to avoid LateInitializationError
   String intiUserEmail = 'No Email';
   String initUserName = 'No Username';
-  String initUserImage =
-      'assets/images/def image.png'; // Provide a default image
+  String initUserImage = ''; // Start with an empty string
 
   String get getInitUsername => initUserName;
   String get getInitUserEmail => intiUserEmail;
-  String get getInitUserImage => initUserImage;
+  String get getInitUserImage => initUserImage.isNotEmpty
+      ? initUserImage
+      : 'assets/images/login.png'; // Provide a default image path
 
   Future uploadUserAvatar(BuildContext context) async {
     try {
@@ -37,6 +38,9 @@ class FirebaseOparations with ChangeNotifier {
 
         print(
             'The user profile avatar url: ${Provider.of<LandingUtils>(context, listen: false).userAvatarUrl}');
+
+        // Update initUserImage after successful upload
+        initUserImage = url.toString();
         notifyListeners();
       });
     } catch (e) {
@@ -67,8 +71,7 @@ class FirebaseOparations with ChangeNotifier {
         if (data != null) {
           initUserName = data['username'] ?? 'No Username';
           intiUserEmail = data['useremail'] ?? 'No Email';
-          initUserImage = data['userimage'] ??
-              Icon(EvaIcons.infoOutline); // Ensure the image is fetched
+          initUserImage = data['userimage'] ?? '';
         }
       } else {
         print("User document does not exist.");
@@ -78,5 +81,11 @@ class FirebaseOparations with ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+//<<<<<<<<<<<<<<..........Post Upload.........>>>>>>>>>>>>>>>>>>
+
+  Future uploadPostData(String postId, dynamic data) async {
+    return FirebaseFirestore.instance.collection('posts').doc(postId).set(data);
   }
 }

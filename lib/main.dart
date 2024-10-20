@@ -3,12 +3,14 @@ import 'package:flink/constants/constant_colors.dart';
 import 'package:flink/firebase_options.dart';
 import 'package:flink/services/authentication.dart';
 import 'package:flink/services/firebase_oparations.dart';
+import 'package:flink/utilities/upload_post.dart';
+import 'package:flink/views/feedscreen/feed_helpers.dart';
 import 'package:flink/views/homescreen/home_helpers.dart';
 import 'package:flink/views/landingscreen/landing_helpers.dart';
 import 'package:flink/views/landingscreen/landing_services.dart';
-import 'package:flink/views/landingscreen/landing_utils.dart';
 import 'package:flink/views/landingscreen/login_screen.dart';
 import 'package:flink/views/landingscreen/signup.dart';
+import 'package:flink/views/profilescreen/profile_helpers.dart';
 import 'package:flink/views/splashscreen/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -34,10 +36,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LandingHelpers()),
         ChangeNotifierProvider(create: (_) => LandingServices()),
         ChangeNotifierProvider(create: (_) => FirebaseOparations()),
-        ChangeNotifierProvider(create: (_) => LandingUtils()),
         ChangeNotifierProvider(create: (_) => LoginProvider()),
         ChangeNotifierProvider(create: (_) => SignUpProvider()),
         ChangeNotifierProvider(create: (_) => HomescreenHelpers()),
+        ChangeNotifierProvider(create: (_) => ProfileHelpers()),
+        ChangeNotifierProvider(create: (_) => UploadPost()),
+        ChangeNotifierProvider(create: (_) => FeedHelpers()),
       ],
       child: MaterialApp(
         home: SplashScreen(),

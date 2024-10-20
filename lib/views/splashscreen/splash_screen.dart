@@ -1,10 +1,12 @@
 import 'dart:async';
-
 import 'package:flink/constants/constant_colors.dart';
+import 'package:flink/services/authentication.dart';
+import 'package:flink/views/homescreen/home_screen.dart';
 import 'package:flink/views/landingscreen/landing_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:provider/provider.dart'; // Import Provider
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,11 +20,23 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void initState() {
-    super.initState(); // Call super.initState() at the beginning
+    super.initState();
 
-    Timer(
-      const Duration(seconds: 1),
-      () {
+    // Check login status after splash delay
+    Timer(const Duration(seconds: 1), () {
+      bool isLoggedIn = context.read<Authentication>().isLoggedIn;
+
+      if (isLoggedIn) {
+        // Navigate to HomePage if logged in
+        Navigator.pushReplacement(
+          context,
+          PageTransition(
+            child: HomeScreen(),
+            type: PageTransitionType.leftToRight,
+          ),
+        );
+      } else {
+        // Navigate to LandingPage if not logged in
         Navigator.pushReplacement(
           context,
           PageTransition(
@@ -30,8 +44,8 @@ class _SplashScreenState extends State<SplashScreen> {
             type: PageTransitionType.leftToRight,
           ),
         );
-      },
-    );
+      }
+    });
   }
 
   @override
@@ -42,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: RichText(
           text: TextSpan(
             text: 'Fli',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.oleoScript(
               textStyle: TextStyle(
                 fontSize: 35,
                 fontWeight: FontWeight.bold,
@@ -52,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen> {
             children: <TextSpan>[
               TextSpan(
                 text: 'nk',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.oleoScript(
                   textStyle: TextStyle(
                     fontSize: 35,
                     fontWeight: FontWeight.bold,
