@@ -4,9 +4,8 @@ import 'package:flink/services/authentication.dart';
 import 'package:flink/views/homescreen/home_screen.dart';
 import 'package:flink/views/landingscreen/landing_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:provider/provider.dart'; // Import Provider
+import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,17 +16,33 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   ConstantColors constantColors = ConstantColors();
+  bool showLogo = false; // Controls logo visibility
+  bool showGifEnd = false; // Controls end GIF visibility
 
   @override
   void initState() {
     super.initState();
 
-    // Check login status after splash delay
-    Timer(const Duration(seconds: 1), () {
+    // Show the logo after 1.5 seconds and hide the GIF
+    Timer(const Duration(seconds: 1, milliseconds: 500), () {
+      setState(() {
+        showLogo = true;
+      });
+    });
+
+    // Show the GIF again after a total of 3 seconds
+    Timer(const Duration(seconds: 3), () {
+      setState(() {
+        showLogo = false; // Hide the logo
+        showGifEnd = true; // Show the GIF again
+      });
+    });
+
+    // Navigate to the next screen after 4.5 seconds
+    Timer(const Duration(seconds: 4, milliseconds: 500), () {
       bool isLoggedIn = context.read<Authentication>().isLoggedIn;
 
       if (isLoggedIn) {
-        // Navigate to HomePage if logged in
         Navigator.pushReplacement(
           context,
           PageTransition(
@@ -36,7 +51,6 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         );
       } else {
-        // Navigate to LandingPage if not logged in
         Navigator.pushReplacement(
           context,
           PageTransition(
@@ -53,29 +67,30 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: constantColors.darkColor,
       body: Center(
-        child: RichText(
-          text: TextSpan(
-            text: 'Fli',
-            style: GoogleFonts.oleoScript(
-              textStyle: TextStyle(
-                fontSize: 35,
-                fontWeight: FontWeight.bold,
-                color: constantColors.whiteColor,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Show the GIF at the start and at the end
+            if (!showLogo || showGifEnd)
+              Image.asset(
+                'assets/animations/Animated-F-unscreen.gif',
+                width: 150, // Adjust as needed
+                height: 150, // Adjust as needed
               ),
-            ),
-            children: <TextSpan>[
-              TextSpan(
-                text: 'nk',
-                style: GoogleFonts.oleoScript(
-                  textStyle: TextStyle(
-                    fontSize: 35,
-                    fontWeight: FontWeight.bold,
-                    color: constantColors.yellowColor,
-                  ),
+
+            if (showLogo && !showGifEnd)
+              AnimatedOpacity(
+                opacity:
+                    showLogo ? 1.0 : 0.0, // Control opacity based on showLogo
+                duration:
+                    const Duration(seconds: 1), // Duration of fade-in effect
+                child: Image.asset(
+                  'assets/images/Flinklogo1-removebg-preview.png',
+                  width: 150, // Adjust as needed
+                  height: 150, // Adjust as needed
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

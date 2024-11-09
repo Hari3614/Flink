@@ -1,10 +1,11 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flink/constants/constant_colors.dart';
 import 'package:flink/services/authentication.dart';
 import 'package:flink/services/firebase_oparations.dart';
+import 'package:flink/views/homescreen/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,9 +13,7 @@ import 'package:provider/provider.dart';
 
 class UploadPost with ChangeNotifier {
   TextEditingController captionController = TextEditingController();
-
   FocusNode captionFocusNode = FocusNode();
-
   ConstantColors constantColors = ConstantColors();
 
   late File uploadPostImage;
@@ -43,7 +42,9 @@ class UploadPost with ChangeNotifier {
     notifyListeners();
   }
 
-  Future uploadPostImageToFirebase() async {
+  Future uploadPostImageToFirebase(BuildContext context) async {
+    _showLoadingDialog(context);
+
     Reference imageReference = FirebaseStorage.instance
         .ref()
         .child('posts/${uploadPostImage.path}/${TimeOfDay.now()}');
@@ -54,13 +55,12 @@ class UploadPost with ChangeNotifier {
       print('Post image uploaded to storage');
     });
 
-    imageReference.getDownloadURL().then((imageUrl) {
+    return await imageReference.getDownloadURL().then((imageUrl) {
       uploadPostImageurl = imageUrl;
+      print('Image URL: $uploadPostImageurl');
 
-      print(uploadPostImageurl);
+      _hideLoadingDialog(context);
     });
-
-    notifyListeners();
   }
 
   selectPostImageType(BuildContext context) {
@@ -94,9 +94,7 @@ class UploadPost with ChangeNotifier {
                       ),
                     ),
                   ),
-
-                  const SizedBox(
-                      height: 20.0), // Add spacing to avoid bottom overflow
+                  const SizedBox(height: 20.0),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -106,7 +104,7 @@ class UploadPost with ChangeNotifier {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0),
                           ),
-                          padding: EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                               vertical: 12.0, horizontal: 20.0),
                         ),
                         onPressed: () {
@@ -127,6 +125,7 @@ class UploadPost with ChangeNotifier {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0),
                           ),
+                          // ignore: prefer_const_constructors
                           padding: EdgeInsets.symmetric(
                               vertical: 12.0, horizontal: 20.0),
                         ),
@@ -169,17 +168,6 @@ class UploadPost with ChangeNotifier {
                   color: constantColors.greyColor,
                 ),
               ),
-              // Padding(
-              //   padding: const EdgeInsets.only(top: 7.0),
-              //   child: Text(
-              //     'Select From',
-              //     style: TextStyle(
-              //       color: constantColors.greyColor,
-              //       fontWeight: FontWeight.bold,
-              //       fontSize: 16.0,
-              //     ),
-              //   ),
-              // ),
               Padding(
                 padding: const EdgeInsets.only(top: 8.0, left: 8.0, right: 8.0),
                 child: Container(
@@ -191,7 +179,6 @@ class UploadPost with ChangeNotifier {
                   ),
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Row(
@@ -220,9 +207,9 @@ class UploadPost with ChangeNotifier {
                             ),
                           ),
                           onPressed: () {
-                            uploadPostImageToFirebase().whenComplete(() {
+                            uploadPostImageToFirebase(context).whenComplete(() {
                               editPostSheet(context);
-                              print('Image uploded');
+                              print('Image uploaded');
                             });
                           })
                     ]),
@@ -248,7 +235,7 @@ class UploadPost with ChangeNotifier {
               height: MediaQuery.of(context).size.height * 0.75,
               width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
-                color: constantColors.blueGreyColor,
+                color: const Color.fromARGB(255, 56, 56, 56),
                 borderRadius: BorderRadius.circular(12.0),
               ),
               child: Column(
@@ -296,7 +283,6 @@ class UploadPost with ChangeNotifier {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // Focus on the TextField when tapping this area
                       FocusScope.of(context).requestFocus(captionFocusNode);
                     },
                     child: Container(
@@ -328,8 +314,7 @@ class UploadPost with ChangeNotifier {
                                     MaxLengthEnforcement.enforced,
                                 maxLength: 100,
                                 controller: captionController,
-                                focusNode:
-                                    captionFocusNode, // Attach focus node
+                                focusNode: captionFocusNode,
                                 style: TextStyle(
                                   color: constantColors.whiteColor,
                                   fontSize: 16.0,
@@ -342,52 +327,117 @@ class UploadPost with ChangeNotifier {
                                     fontSize: 14.0,
                                     fontWeight: FontWeight.bold,
                                   ),
+                                  border: InputBorder.none,
                                 ),
                               ),
                             ),
-                          ),
+                          )
                         ],
                       ),
                     ),
                   ),
-                  MaterialButton(
-                    onPressed: () async {
-                      Provider.of<FirebaseOparations>(context, listen: false)
-                          .uploadPostData(captionController.text, {
-                        'caption': captionController.text,
-                        'username': Provider.of<FirebaseOparations>(context,
-                                listen: false)
-                            .getInitUsername,
-                        'userImage': Provider.of<FirebaseOparations>(context,
-                                listen: false)
-                            .getInitUserImage,
-                        'useruid':
-                            Provider.of<Authentication>(context, listen: false)
-                                .getUserUid,
-                        'time': Timestamp.now(),
-                        'useremail': Provider.of<FirebaseOparations>(context,
-                                listen: false)
-                            .getInitUserEmail,
-                      }).whenComplete(() {
-                        Navigator.pop(context);
-                      });
-                    },
-                    color: constantColors.blueColor,
-                    child: Text(
+                  FloatingActionButton.extended(
+                    backgroundColor: constantColors.blueColor,
+                    label: Text(
                       'Post',
                       style: TextStyle(
-                          color: constantColors.whiteColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18.0),
+                        color: constantColors.whiteColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.0,
+                      ),
                     ),
-                  ),
+                    icon: Icon(
+                      Icons.send_sharp,
+                      color: constantColors.whiteColor,
+                    ),
+                    onPressed: () async {
+                      _showLoadingDialog(
+                          context); // Show loading when posting starts
+                      await uploadPostImageToFirebase(context);
+
+                      try {
+                        DocumentSnapshot userData = await _getUserData();
+
+                        if (userData.exists && userData.data() != null) {
+                          // Cast the user data to Map<String, dynamic>
+                          Map<String, dynamic> userMap =
+                              userData.data() as Map<String, dynamic>;
+
+                          // Now access the userImage field safely
+                          String userImage = userMap['profileImageUrl'] ??
+                              'https://via.placeholder.com/150'; // Use a default image if the field is missing
+
+                          // Proceed with uploading post data
+                          await Provider.of<FirebaseOparations>(context,
+                                  listen: false)
+                              .uploadPostData(
+                            captionController.text,
+                            {
+                              'postimage': getUploadPostImageUrl,
+                              'caption': captionController.text,
+                              'username': Provider.of<FirebaseOparations>(
+                                      context,
+                                      listen: false)
+                                  .getInitUsername,
+                              'userimage':
+                                  userImage, // Use the retrieved user image here
+                              'useruid': Provider.of<Authentication>(context,
+                                      listen: false)
+                                  .getUserUid,
+                              'time': Timestamp.now(),
+                            },
+                          ).whenComplete(() {
+                            _hideLoadingDialog(context);
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => HomeScreen()),
+                              (Route<dynamic> route) => false,
+                            );
+                          });
+                        } else {
+                          // Handle the case where the user document does not exist
+                          print('User document does not exist.');
+                          _hideLoadingDialog(context);
+                        }
+                      } catch (e) {
+                        print('Error retrieving user data: $e');
+                        _hideLoadingDialog(context);
+                      }
+                    },
+                  )
                 ],
               ),
             ),
           );
         });
   }
+
+  Future<DocumentSnapshot> _getUserData() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      return FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    }
+    throw Exception('No user signed in');
+  }
+
+  _showLoadingDialog(BuildContext context) {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        return Center(
+          child: SizedBox(
+            width: 100,
+            height: 100,
+            child: Image.asset('assets/animations/F-unscreen.gif'),
+          ),
+        );
+      },
+    );
+  }
+
+  _hideLoadingDialog(BuildContext context) {
+    Navigator.of(context, rootNavigator: true).pop();
+  }
 }
-
-
-//<<< 20:09;

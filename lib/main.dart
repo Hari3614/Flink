@@ -3,6 +3,7 @@ import 'package:flink/constants/constant_colors.dart';
 import 'package:flink/firebase_options.dart';
 import 'package:flink/services/authentication.dart';
 import 'package:flink/services/firebase_oparations.dart';
+import 'package:flink/utilities/post_options.dart';
 import 'package:flink/utilities/upload_post.dart';
 import 'package:flink/views/feedscreen/feed_helpers.dart';
 import 'package:flink/views/homescreen/home_helpers.dart';
@@ -42,6 +43,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProfileHelpers()),
         ChangeNotifierProvider(create: (_) => UploadPost()),
         ChangeNotifierProvider(create: (_) => FeedHelpers()),
+        ChangeNotifierProvider(create: (_) => PostFunctions())
       ],
       child: MaterialApp(
         home: SplashScreen(),

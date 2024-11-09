@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flink/services/authentication.dart';
 import 'package:flink/views/landingscreen/landing_utils.dart';
@@ -87,5 +86,33 @@ class FirebaseOparations with ChangeNotifier {
 
   Future uploadPostData(String postId, dynamic data) async {
     return FirebaseFirestore.instance.collection('posts').doc(postId).set(data);
+  }
+}
+
+Future<void> savePost(BuildContext context, String postId) async {
+  try {
+    final currentUserUid =
+        Provider.of<Authentication>(context, listen: false).getUserUid;
+
+    // Reference to Firestore
+    final firestore = FirebaseFirestore.instance;
+
+    await firestore
+        .collection('users')
+        .doc(currentUserUid)
+        .collection('saved_posts')
+        .doc(postId)
+        .set({
+      'postId': postId,
+      'savedAt': Timestamp.now(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Post saved successfully!')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to save post: $e')),
+    );
   }
 }
